@@ -1,15 +1,21 @@
-function fetchFromCoinMarketCap() {
+function updateCryptoSpreadsheet() {
+  
+  var spreadsheet = SpreadsheetApp.openByUrl(PropertiesService.getScriptProperties().getProperty('spreadsheetUrl'));
   
   var apiToken = PropertiesService.getScriptProperties().getProperty('apiToken');
   var chatId   = PropertiesService.getScriptProperties().getProperty('chatId');
- 
-  const SPREADSHEET = SpreadsheetApp.openByUrl("XXX")
+   
+  updatePriceSheetFromCoinMarketCap(spreadsheet, apiToken, chatId);
+}
+
+function updatePriceSheetFromCoinMarketCap(spreadsheet, apiToken, chatId) {
   
-    //const SPREADSHEET = SpreadsheetApp.getActiveSpreadsheet();
-    const PRICE_SHEET = SPREADSHEET.getSheetByName("Prices");
+    const PRICE_SHEET_NAME = "Prices"
     const RANGE = "A:I";
   
-    var trackedCoins = PRICE_SHEET.getRange(RANGE).getValues();
+    var priceSheet = spreadsheet.getSheetByName(PRICE_SHEET_NAME);
+  
+    var trackedCoins = priceSheet.getRange(RANGE).getValues();
 
     // Make the single request
     var response = UrlFetchApp.fetch("https://api.coinmarketcap.com/v1/ticker/?convert=EUR");
@@ -34,23 +40,20 @@ function fetchFromCoinMarketCap() {
             trackedCoins[i][5] = formatPercent(coin.percent_change_1h);
             trackedCoins[i][6] = formatPercent(coin.percent_change_24h);
             trackedCoins[i][7] = formatPercent(coin.percent_change_7d);
-            trackedCoins[i][8] = coin.last_updated;
+            trackedCoins[i][8] = Utilities.formatDate(new Date(coin.last_updated*1000), "GMT+1", "yyyy-MM-dd HH:mm:ss");
           
-          	//MailApp.sendEmail({ to:"dssds6666@gmail.com", subject:"Coins", htmlBody:"" + coin});
-          
-          var payload = {
-             'method': 'sendMessage',
-             'chat_id': String(chatId),
-            'text': coin.symbol + ': ' + coin.price_usd.replace('.',','),
-             'parse_mode': 'HTML'
-          }
+            var payload = {
+              'method': 'sendMessage',
+              'chat_id': String(chatId),
+              'text': coin.symbol + ': ' + coin.price_usd.replace('.',',') + '$ / ' + coin.price_eur.replace('.',',') + '€',
+              'parse_mode': 'HTML'
+            }
           
             sendToTelegram(apiToken, chatId, payload);
-          
         }
         
     }
 
     // Flush the array to the spreadsheet in 1 go
-    PRICE_SHEET.getRange(RANGE).setValues(trackedCoins);
+    priceSheet.getRange(RANGE).setValues(trackedCoins);
 }
