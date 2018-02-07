@@ -5,10 +5,12 @@ function updateCryptoSpreadsheet() {
   var apiToken = PropertiesService.getScriptProperties().getProperty('apiToken');
   var chatId   = PropertiesService.getScriptProperties().getProperty('chatId');
    
-  updatePriceSheetFromCoinMarketCap(spreadsheet, apiToken, chatId);
+  updatePriceSheetFromCoinMarketCap(spreadsheet);
+  
+  sendPriceSheetViaTelegram(spreadsheet, apiToken, chatId);
 }
 
-function updatePriceSheetFromCoinMarketCap(spreadsheet, apiToken, chatId) {
+function updatePriceSheetFromCoinMarketCap(spreadsheet) {
   
     const PRICE_SHEET_NAME = "Prices"
     const RANGE = "A:I";
@@ -41,19 +43,40 @@ function updatePriceSheetFromCoinMarketCap(spreadsheet, apiToken, chatId) {
             trackedCoins[i][6] = formatPercent(coin.percent_change_24h);
             trackedCoins[i][7] = formatPercent(coin.percent_change_7d);
             trackedCoins[i][8] = Utilities.formatDate(new Date(coin.last_updated*1000), "GMT+1", "yyyy-MM-dd HH:mm:ss");
-          
-            var payload = {
-              'method': 'sendMessage',
-              'chat_id': String(chatId),
-              'text': coin.symbol + ': ' + coin.price_usd.replace('.',',') + '$ / ' + coin.price_eur.replace('.',',') + '€',
-              'parse_mode': 'HTML'
-            }
-          
-            sendToTelegram(apiToken, chatId, payload);
         }
         
     }
 
     // Flush the array to the spreadsheet in 1 go
     priceSheet.getRange(RANGE).setValues(trackedCoins);
+}
+
+function sendPriceSheetViaTelegram(spreadsheet, apiToken, chatId) {
+  
+  const PRICE_SHEET_NAME = "Prices"
+  const RANGE = "A:I";
+  
+  var priceSheet = spreadsheet.getSheetByName(PRICE_SHEET_NAME);
+  
+  var trackedCoins = priceSheet.getRange(RANGE).getValues();
+  
+  var coins = ''
+  
+  for(var i = 1; i < trackedCoins.length; i++) {
+    
+    // skip empty lines
+    if(trackedCoins[i][1] == "")
+      continue;
+    
+    coins += '<b>'+ trackedCoins[i][1] + '</b>: ' + trackedCoins[i][2] + '$ / ' + trackedCoins[i][3] + '€\n';
+  }
+  
+  var payload = {
+    'method': 'sendMessage',
+    'chat_id': String(chatId),
+    'text': coins,
+    'parse_mode': 'HTML'
+  }
+        
+  sendToTelegram(apiToken, chatId, payload);
 }
