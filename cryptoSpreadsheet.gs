@@ -8,6 +8,7 @@ function updateCryptoSpreadsheet() {
   updatePriceSheetFromCoinMarketCap(spreadsheet);
   
   sendPriceSheetViaTelegram(spreadsheet, apiToken, chatId);
+  sendBalanceViaTelegram(spreadsheet, apiToken, chatId);
 }
 
 function updatePriceSheetFromCoinMarketCap(spreadsheet) {
@@ -69,6 +70,36 @@ function sendPriceSheetViaTelegram(spreadsheet, apiToken, chatId) {
       continue;
     
     coins += '<b>'+ trackedCoins[i][1] + '</b>: ' + trackedCoins[i][2] + '$ / ' + trackedCoins[i][3] + '€\n';
+  }
+  
+  var payload = {
+    'method': 'sendMessage',
+    'chat_id': String(chatId),
+    'text': coins,
+    'parse_mode': 'HTML'
+  }
+        
+  sendToTelegram(apiToken, chatId, payload);
+}
+
+function sendBalanceViaTelegram(spreadsheet, apiToken, chatId) {
+  
+  const PRICE_SHEET_NAME = "Balance"
+  const RANGE = "A:D";
+  
+  var priceSheet = spreadsheet.getSheetByName(PRICE_SHEET_NAME);
+  
+  var trackedCoins = priceSheet.getRange(RANGE).getValues();
+  
+  var coins = ''
+  
+  for(var i = 1; i < trackedCoins.length; i++) {
+    
+    // skip empty lines
+    if(trackedCoins[i][0] == "")
+      continue;
+    
+    coins += '<b>'+ trackedCoins[i][0] + '</b>: ' + (trackedCoins[i][3]*100).toFixed(2) +'%\n';
   }
   
   var payload = {
