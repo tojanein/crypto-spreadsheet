@@ -139,8 +139,8 @@ function sendBalanceViaTelegram(spreadsheet, apiToken, chatId) {
 
  var chart = Charts.newBarChart()
        .setTitle('Balance')
-       .setXAxisTitle('Total')
-       .setYAxisTitle('Change in %')
+       .setXAxisTitle('Change in %')
+       .setYAxisTitle('Coin')
        .setDimensions(600, 400)
        .setLegendPosition(Charts.Position.NONE)
        .setDataTable(sampleData.build())
